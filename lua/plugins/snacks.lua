@@ -140,9 +140,8 @@ return {
             "**/.git/*",
             "**/node_modules/*",
             "**/dist/*",
+            "**/out/*",
             "**/.coverage/*",
-            "**/test-suites/*",
-            "**/tests/*",
             "**/**/*.log*",
             "**/ios/*",
             "**/.expo/*",
@@ -182,9 +181,8 @@ return {
             "package-lock.json",
             "yarn.lock",
             "dist",
+            "out",
             ".coverage",
-            "test-suites",
-            "tests",
             ".turbo",
             ".expo",
             "ios",
@@ -416,6 +414,15 @@ return {
       },
     },
     lazygit = {
+      config = {
+        os = {
+          editPreset = "",
+          edit = 'nvim --server "$NVIM" --remote-send "<C-\\><C-n><cmd>close<cr>" && nvim --server "$NVIM" --remote "{{filename}}"',
+          editAtLine = 'nvim --server "$NVIM" --remote-send "<C-\\><C-n><cmd>close<cr>" && nvim --server "$NVIM" --remote "{{filename}}" && nvim --server "$NVIM" --remote-send ":{{line}}<CR>"',
+          editAtLineAndWait = 'nvim "{{filename}}" +{{line}}',
+          openDirInEditor = 'nvim --server "$NVIM" --remote-send "<C-\\><C-n><cmd>close<cr>" && nvim --server "$NVIM" --remote "{{dir}}"',
+        },
+      },
       win = {
         position = "float",
         width = 0,
