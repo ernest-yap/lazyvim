@@ -11,46 +11,28 @@ local Explorer = require("utils.explorer")
 
 local buffer_triggered = false
 
-vim.api.nvim_create_autocmd({ "BufReadPost" }, {
-  callback = function()
-    local win_id = vim.api.nvim_get_current_win()
-
-    if buffer_triggered or Explorer.is_explorer_open() then
-      return
-    end
-
-    require("snacks").explorer()
-
-    buffer_triggered = true
-
-    vim.defer_fn(function()
-      if vim.api.nvim_win_is_valid(win_id) then
-        vim.api.nvim_set_current_win(win_id)
-      end
-    end, 450)
-  end,
-})
-
-vim.api.nvim_create_autocmd("BufDelete", {
-  pattern = "*",
-  callback = function()
-    if Explorer.is_explorer_open() then
-      vim.schedule(function()
-        vim.cmd("wincmd h")
-      end)
-      vim.schedule(function()
-        vim.api.nvim_input("Z")
-      end)
-      vim.schedule(function()
-        vim.cmd("wincmd l")
-      end)
-    end
-  end,
-})
-
+-- use sh file format on env
 vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
   pattern = { ".env.*", "*.env.*" },
   callback = function()
     vim.bo.filetype = "sh"
+  end,
+})
+
+-- treat hujson (human json, e.g. tailscale acls) as jsonc
+vim.filetype.add({
+  extension = {
+    hujson = "jsonc",
+  },
+})
+
+-- show file name at the top of each window
+vim.api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
+  callback = function()
+    if vim.bo.buftype ~= "" or vim.api.nvim_buf_get_name(0) == "" then
+      vim.wo.winbar = ""
+      return
+    end
+    vim.wo.winbar = " %f %m"
   end,
 })

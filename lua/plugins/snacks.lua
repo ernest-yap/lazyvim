@@ -1,110 +1,5 @@
-local Explorer = require("utils.explorer")
-
--- Open picker.select to search for a directory to search in
-local grep_directory = function()
-  local snacks = require("snacks")
-  local has_fd = vim.fn.executable("fd") == 1
-  local cwd = vim.fn.getcwd()
-
-  local function show_picker(dirs)
-    if #dirs == 0 then
-      vim.notify("No directories found", vim.log.levels.WARN)
-      return
-    end
-
-    local items = {}
-    for i, item in ipairs(dirs) do
-      table.insert(items, {
-        idx = i,
-        file = item,
-        text = item,
-      })
-    end
-
-    snacks.picker({
-      confirm = function(picker, item)
-        picker:close()
-        snacks.picker.grep({
-          dirs = { item.file },
-        })
-      end,
-      items = items,
-      format = function(item, _)
-        local file = item.file
-        local ret = {}
-        local a = Snacks.picker.util.align
-        local icon, icon_hl = Snacks.util.icon(file.ft, "directory")
-        ret[#ret + 1] = { a(icon, 3), icon_hl }
-        ret[#ret + 1] = { " " }
-        local path = file:gsub("^" .. vim.pesc(cwd) .. "/", "")
-        ret[#ret + 1] = { a(path, 20), "Directory" }
-
-        return ret
-      end,
-      layout = {
-        preview = false,
-        preset = "vertical",
-      },
-      title = "Grep in directory",
-    })
-  end
-
-  if has_fd then
-    local cmd = { "fd", "--type", "directory", "--hidden", "--no-ignore-vcs", "--exclude", ".git" }
-    local dirs = {}
-
-    vim.fn.jobstart(cmd, {
-      on_stdout = function(_, data, _)
-        for _, line in ipairs(data) do
-          if line and line ~= "" then
-            table.insert(dirs, line)
-          end
-        end
-      end,
-      on_exit = function(_, code, _)
-        if code == 0 then
-          show_picker(dirs)
-        else
-          -- Fallback to plenary if fd fails
-          local fallback_dirs = require("plenary.scandir").scan_dir(cwd, {
-            only_dirs = true,
-            respect_gitignore = true,
-          })
-          show_picker(fallback_dirs)
-        end
-      end,
-    })
-  else
-    -- Use plenary if fd is not available
-    local dirs = require("plenary.scandir").scan_dir(cwd, {
-      only_dirs = true,
-      respect_gitignore = true,
-    })
-    show_picker(dirs)
-  end
-end
-
 return {
   "folke/snacks.nvim",
-  init = function()
-    vim.api.nvim_create_autocmd("VimEnter", {
-      callback = function()
-        if vim.fn.argc() > 0 or Explorer.is_explorer_open() then
-          return
-        end
-
-        local win_id = vim.api.nvim_get_current_win()
-
-        require("snacks").explorer.open()
-
-        vim.defer_fn(function()
-          if vim.api.nvim_win_is_valid(win_id) then
-            vim.api.nvim_set_current_win(win_id)
-          end
-        end, 500)
-      end,
-    })
-  end,
   opts = {
     dashboard = {
       styles = {
@@ -216,7 +111,20 @@ return {
           hidden = true,
           ignored = true,
           regex = false,
-          auto_close = false,
+          auto_close = true,
+          follow_file = false,
+          actions = {
+            open_in_finder = {
+              action = function(_, item)
+                if not item then
+                  return
+                end
+                vim.system({ "open", "-R", item.file }) -- macOS reveal
+                -- Linux: { "xdg-open", vim.fn.fnamemodify(item.file, ":h") }
+                -- Windows: { "explorer", "/select,", item.file }
+              end,
+            },
+          },
           win = {
             list = {
               keys = {
@@ -229,13 +137,14 @@ return {
                 ["r"] = "explorer_rename",
                 ["c"] = "explorer_copy",
                 ["m"] = "explorer_move",
-                ["o"] = "explorer_open", -- open with system application
+                ["o"] = "open_in_finder", -- open with system application
                 ["P"] = "toggle_preview",
                 ["y"] = { "explorer_yank", mode = { "n", "x" } },
                 ["p"] = "explorer_paste",
                 ["u"] = "explorer_update",
                 ["<c-c>"] = "tcd",
                 ["<leader>/"] = "picker_grep",
+                ["<leader>o"] = "open_in_finder",
                 ["<c-t>"] = "terminal",
                 ["."] = "explorer_focus",
                 ["I"] = "toggle_ignored",
@@ -266,7 +175,7 @@ return {
           --- * right: truncate the end of the path
           ---@type "left"|"center"|"right"
           truncate = "left",
-          min_width = 80, -- minimum length of the truncated path
+          min_width = 999, -- minimum length of the truncated path (high = never truncate)
           filename_only = false, -- only show the filename
           icon_width = 2, -- width of the icon (in characters)
           git_status_hl = true, -- use the git status highlight group for the filename
@@ -416,11 +325,12 @@ return {
     lazygit = {
       config = {
         os = {
-          editPreset = "",
-          edit = 'nvim --server "$NVIM" --remote-send "<C-\\><C-n><cmd>close<cr>" && nvim --server "$NVIM" --remote "{{filename}}"',
-          editAtLine = 'nvim --server "$NVIM" --remote-send "<C-\\><C-n><cmd>close<cr>" && nvim --server "$NVIM" --remote "{{filename}}" && nvim --server "$NVIM" --remote-send ":{{line}}<CR>"',
-          editAtLineAndWait = 'nvim "{{filename}}" +{{line}}',
-          openDirInEditor = 'nvim --server "$NVIM" --remote-send "<C-\\><C-n><cmd>close<cr>" && nvim --server "$NVIM" --remote "{{dir}}"',
+          editPreset = "nvim-remote",
+          -- same as the nvim-remote preset, but with --remote instead of
+          -- --remote-tab so files open in the current window, not a new tab
+          edit = '[ -z "$NVIM" ] && (nvim -- {{filename}}) || (nvim --server "$NVIM" --remote-send "q" && nvim --server "$NVIM" --remote {{filename}})',
+          editAtLine = '[ -z "$NVIM" ] && (nvim +{{line}} -- {{filename}}) || (nvim --server "$NVIM" --remote-send "q" && nvim --server "$NVIM" --remote {{filename}} && nvim --server "$NVIM" --remote-send ":{{line}}<CR>")',
+          openDirInEditor = '[ -z "$NVIM" ] && (nvim -- {{dir}}) || (nvim --server "$NVIM" --remote-send "q" && nvim --server "$NVIM" --remote {{dir}})',
         },
       },
       win = {
@@ -440,7 +350,6 @@ return {
 
       -- search
       { "<leader>/", picker.grep, desc = "Search: Workspace" },
-      { "<leader>?", grep_directory, desc = "Search: Directory" },
       { "<leader>g/", picker.grep_word, desc = "Search: Current word" },
 
       -- current state

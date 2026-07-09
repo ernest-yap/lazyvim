@@ -25,6 +25,15 @@ local function set_filetype(ft)
   vim.notify("filetype set to: " .. ft, vim.log.levels.INFO)
 end
 
+-- Delete other buffers, but keep any buffer currently visible in a window
+keymap("n", "<leader>bo", function()
+  Snacks.bufdelete.delete({
+    filter = function(buf)
+      return #vim.fn.win_findbuf(buf) == 0
+    end,
+  })
+end, { desc = "Delete Other Buffers (keep visible)" })
+
 keymap("n", "<leader>bn", ":enew<CR>", { noremap = true, silent = true, desc = "Buffer: new (empty)" })
 keymap("n", "<leader>bf", function()
   vim.ui.input({ prompt = "Set filetype (e.g. python, lua, go): " }, function(input)
