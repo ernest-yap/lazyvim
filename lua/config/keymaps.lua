@@ -51,6 +51,24 @@ keymap({ "i", "n", "v" }, "<C-c>", "<Esc>", { noremap = true, silent = true, des
 keymap("n", "zR", require("ufo").openAllFolds)
 keymap("n", "zM", require("ufo").closeAllFolds)
 
+-- Native zC only closes folds containing the cursor line; nested folds on
+-- other lines stay open. Close the fold at the cursor plus every fold inside
+-- it, without touching enclosing parent folds.
+keymap("n", "zC", function()
+  vim.cmd("silent! normal! zc")
+  local first, last = vim.fn.foldclosed("."), vim.fn.foldclosedend(".")
+  if first == -1 then
+    return
+  end
+  vim.cmd(("silent! %d,%dfoldclose!"):format(first, last))
+  -- range foldclose! also closes enclosing folds; reopen them
+  local f = vim.fn.foldclosed(".")
+  while f ~= -1 and f < first do
+    vim.cmd("silent! normal! zo")
+    f = vim.fn.foldclosed(".")
+  end
+end, { desc = "Close fold under cursor and all nested folds" })
+
 -- Clear scrollback WITHOUT killing the shell process
 keymap("t", "<C-'>", function()
   vim.api.nvim_chan_send(vim.b.terminal_job_id, "clear && printf '\\033[3J'")

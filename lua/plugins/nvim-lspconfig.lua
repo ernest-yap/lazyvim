@@ -3,6 +3,17 @@ return {
   opts = {
     servers = {
       ["*"] = {
+        keys = {
+          {
+            "gD",
+            function()
+              vim.cmd("vsplit")
+              vim.lsp.buf.definition()
+            end,
+            desc = "Goto Definition (Split)",
+            has = "definition",
+          },
+        },
         capabilities = {
           textDocument = {
             foldingRange = {

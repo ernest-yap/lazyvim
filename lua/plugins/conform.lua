@@ -17,6 +17,8 @@ return {
       javascriptreact = js_formatters,
       typescript = js_formatters,
       typescriptreact = js_formatters,
+      json = js_formatters,
+      jsonc = js_formatters,
     },
     formatters = {
       biome = {

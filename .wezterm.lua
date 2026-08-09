@@ -25,6 +25,7 @@ local config = {
   font = wezterm.font("FiraCode Nerd Font", { weight = "Medium" }),
   font_size = 12.0,
   color_scheme = "Tokyo Night",
+  adjust_window_size_when_changing_font_size = false,
 
   hide_tab_bar_if_only_one_tab = false,
   use_fancy_tab_bar = false,
@@ -68,7 +69,7 @@ local config = {
       mods = "CMD",
       action = act_cb(function(window, pane)
         if is_nvim(pane) then
-          return window:perform_action(act.SendString("\x1b\x13\n"), pane)
+          return window:perform_action(act.SendString("\x1b\x13"), pane)
         end
       end),
     },
@@ -78,10 +79,28 @@ local config = {
       mods = "CMD|SHIFT",
       action = wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" }),
     },
+    -- <CMD-SHIFT-F> Split Pane Vertically
+    {
+      key = "f",
+      mods = "CMD|SHIFT",
+      action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }),
+    },
     -- <CMD-SHIFT-Z> Undo in Neovim
     {
       key = "z",
       mods = "CMD",
+      action = act_cb(function(window, pane)
+        if is_nvim(pane) then
+          return window:perform_action(
+            act.SendString("\x1bua"), -- leader
+            pane
+          )
+        end
+      end),
+    },
+    {
+      key = "z",
+      mods = "CTRL",
       action = act_cb(function(window, pane)
         if is_nvim(pane) then
           return window:perform_action(
