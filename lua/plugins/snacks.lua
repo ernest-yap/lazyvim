@@ -130,6 +130,9 @@ return {
             "**/target/*",
             "**/.next/*",
             "**/.turbo/*",
+            "**/test-suites/*",
+            "**/*.test.ts*",
+            "**/*.spec.ts*",
           },
           layout = {
             fullscreen = true,
@@ -171,6 +174,9 @@ return {
             "target",
             ".next",
             "pnpm-lock.yaml",
+            "test-suites",
+            "*.test.ts*",
+            "*.spec.ts*",
           },
           layout = {
             fullscreen = true,

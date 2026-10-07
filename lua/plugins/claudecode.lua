@@ -10,6 +10,7 @@ return {
       snacks_win_opts = {
         position = "right",
         height = 1.0,
+        width = 0.5,
       },
     },
   },
