@@ -132,7 +132,9 @@ return {
             "**/.turbo/*",
             "**/test-suites/*",
             "**/*.test.ts*",
+            "**/*.test.ts",
             "**/*.spec.ts*",
+            "**/*.spec.ts",
           },
           layout = {
             fullscreen = true,
@@ -177,6 +179,8 @@ return {
             "test-suites",
             "*.test.ts*",
             "*.spec.ts*",
+            "*.test.ts",
+            "*.spec.ts",
           },
           layout = {
             fullscreen = true,
@@ -196,6 +200,14 @@ return {
               { win = "preview", border = "rounded", width = 0.7, title = "{preview}" },
             },
           },
+        },
+        lsp_references = {
+          transform = function(item)
+            local file = item.file or ""
+            if file:match("%.test%.tsx?$") or file:match("%.spec%.tsx?$") then
+              return false
+            end
+          end,
         },
         explorer = {
           hidden = true,
@@ -421,6 +433,15 @@ return {
           edit = '[ -z "$NVIM" ] && (nvim -- {{filename}}) || (nvim --server "$NVIM" --remote-send "q" && nvim --server "$NVIM" --remote {{filename}})',
           editAtLine = '[ -z "$NVIM" ] && (nvim +{{line}} -- {{filename}}) || (nvim --server "$NVIM" --remote-send "q" && nvim --server "$NVIM" --remote {{filename}} && nvim --server "$NVIM" --remote-send ":{{line}}<CR>")',
           openDirInEditor = '[ -z "$NVIM" ] && (nvim -- {{dir}}) || (nvim --server "$NVIM" --remote-send "q" && nvim --server "$NVIM" --remote {{dir}})',
+        },
+        gui = {
+          showFileTree = false,
+        },
+        git = {
+          paging = {
+            colorArg = "always",
+            pager = "delta --dark --paging=never --side-by-side",
+          },
         },
       },
       win = {
